@@ -114,7 +114,7 @@ const Signup = () => {
         </div>
 
         <div className="switch-text">
-          <p>Already have an account? <a href="#login">Log In</a></p>
+          <p>Already have an account? <Link to="/" >  Log In  </Link></p>
         </div>
       </div>
 
