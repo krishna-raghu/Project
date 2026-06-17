@@ -34,7 +34,7 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
             <input
               type="text"
-              placeholder="Search projects, services..."
+              placeholder="Search collections, services..."
               className="pl-10 pr-4 py-2 bg-dark-card-2 border border-dark-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary w-64"
             />
           </div>
@@ -55,21 +55,7 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-dark-card border border-dark-border rounded-xl p-4">
-            <div className="text-sm text-text-muted mb-2">{stat.label}</div>
-            <div className="flex items-end justify-between">
-              <div className="text-3xl font-bold text-text-primary">{stat.value}</div>
-              <div className={`flex items-center gap-1 text-xs font-medium ${stat.positive ? 'text-success' : 'text-danger'}`}>
-                <ArrowUpRight size={14} />
-                {stat.change}
-              </div>
-            </div>
-            <div className="text-xs text-text-muted mt-1">from last week</div>
-          </div>
-        ))}
-      </div>
+
 
       <div className="bg-dark-card border border-dark-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
@@ -108,6 +94,47 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
         </div>
       </div>
 
+
+
+
+
+     {/*status bar */}
+     {/* <div className="bg-dark-card border border-dark-border rounded-lg px-4 py-1.5">
+        <div className="flex items-center justify-between">
+          {stats.map((stat, index) => (
+            <React.Fragment key={stat.label}>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-semibold text-text-primary">
+                  {stat.value}
+                </span>
+
+                <span className="text-xs text-text-muted">
+                  {stat.label}
+                </span>
+
+                <span
+                  className={`text-[10px] font-medium ${
+                    stat.positive ? "text-success" : "text-danger"
+                  }`}
+                >
+                  {stat.change}
+                </span>
+              </div>
+
+              {index < stats.length - 1 && (
+                <div className="h-4 w-px bg-dark-border" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>*/}
+
+
+
+
+
+
+
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-dark-card border border-dark-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
@@ -127,6 +154,12 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
             ))}
           </div>
         </div>
+
+
+
+
+
+
 
 
       </div>
