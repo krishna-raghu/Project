@@ -2,9 +2,8 @@ import React from 'react';
 import { LayoutDashboard, FolderKanban, Activity, Bell, Settings, ChevronDown } from 'lucide-react';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', page: 'home', activePages: ['home'] },
-  { icon: FolderKanban, label: 'Projects', page: 'home', activePages: ['project-details'] },
-  { icon: Activity, label: 'Activity', page: 'activity', activePages: ['activity'] },
+  { icon: LayoutDashboard, label: 'Home', page: 'home', activePages: ['home'] },
+  { icon: Activity, label: 'User Activity', page: 'activity', activePages: ['activity'] },
   { icon: Bell, label: 'Notifications', page: 'alerts', activePages: ['alerts'], badge: true },
   { icon: Settings, label: 'Settings', page: 'settings', activePages: ['settings'] },
 ];
@@ -41,6 +40,7 @@ export default function Sidebar({ activePage, setActivePage, user }) {
           );
         })}
       </nav>
+
 
       <div className="p-3 border-t border-dark-border">
         <button

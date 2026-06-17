@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, Bell, Shield, ArrowUpRight, Clock, MoveHorizontal as MoreHorizontal, TriangleAlert as AlertTriangle, Activity, Zap, Link2 } from 'lucide-react';
+import { Plus, Search, Shield, ArrowUpRight, Clock, MoveHorizontal as MoreHorizontal, TriangleAlert as AlertTriangle, Activity, Zap, Link2 } from 'lucide-react';
 
 const featuredProjects = [
   { id: 'PRJ-0012', name: 'Payment Gateway V2', icon: 'P', color: 'bg-blue-500', desc: 'Microservice architecture for payment processing system', services: 25, dependencies: 44, health: 'Healthy', status: 'Good', updated: '2m ago' },
@@ -38,13 +38,7 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
               className="pl-10 pr-4 py-2 bg-dark-card-2 border border-dark-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary w-64"
             />
           </div>
-          <button
-            onClick={() => onNavigate('alerts')}
-            className="relative p-2 text-text-secondary hover:text-text-primary hover:bg-dark-card-2 rounded-lg transition-colors"
-          >
-            <Bell size={20} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full"></span>
-          </button>
+
           <button
             onClick={onNewProject}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors"
@@ -134,50 +128,7 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
           </div>
         </div>
 
-        <div className="bg-dark-card border border-dark-border rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center gap-3 p-3 bg-dark-card-2 border border-dark-border rounded-lg hover:border-primary/50 transition-all">
-              <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
-                <Plus size={16} className="text-success" />
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-medium text-text-primary">Add Service</div>
-                <div className="text-xs text-text-muted">Register new service</div>
-              </div>
-            </button>
-            <button className="flex items-center gap-3 p-3 bg-dark-card-2 border border-dark-border rounded-lg hover:border-primary/50 transition-all">
-              <div className="w-8 h-8 bg-warning/10 rounded-lg flex items-center justify-center">
-                <Link2 size={16} className="text-warning" />
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-medium text-text-primary">Add Dependency</div>
-                <div className="text-xs text-text-muted">Create service dependency</div>
-              </div>
-            </button>
-            <button
-              onClick={() => onNavigate('graph')}
-              className="flex items-center gap-3 p-3 bg-dark-card-2 border border-dark-border rounded-lg hover:border-primary/50 transition-all"
-            >
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Zap size={16} className="text-primary" />
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-medium text-text-primary">View Graph</div>
-                <div className="text-xs text-text-muted">Visualize architecture</div>
-              </div>
-            </button>
-            <button className="flex items-center gap-3 p-3 bg-dark-card-2 border border-dark-border rounded-lg hover:border-primary/50 transition-all">
-              <div className="w-8 h-8 bg-danger/10 rounded-lg flex items-center justify-center">
-                <AlertTriangle size={16} className="text-danger" />
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-medium text-text-primary">Run Analysis</div>
-                <div className="text-xs text-text-muted">Blast radius analysis</div>
-              </div>
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   );
