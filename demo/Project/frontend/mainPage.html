@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Nervix Workspace</title>
+
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+
+<div style="display:flex;
+                justify-content:space-between;
+                margin-bottom:20px;">
+
+    <button id="backBtn">
+        ← Back
+    </button>
+
+    <button id="deployBtn">
+        Deploy To GitHub
+    </button>
+
+</div>
+
+
+<!-- MAIN LAYOUT -->
+
+<div style="display:flex; gap:20px;">
+
+
+    <!-- SIDEBAR -->
+
+    <div style="width:250px;
+                    border:1px solid black;
+                    padding:10px;">
+
+        <h2>All Services</h2>
+
+        <ul id="servicesList"></ul>
+
+    </div>
+
+
+
+    <!-- MAIN CONTENT -->
+
+    <div style="flex:1;">
+
+        <button id="openPopupBtn">
+            Add Services
+        </button>
+
+        <button id="showGraphBtn">
+            Show Graph
+        </button>
+
+        <hr>
+
+        <div id="graphArea"
+
+             style="height:400px;
+                        border:1px solid black;
+                        padding:20px;
+                        margin-top:20px;">
+
+            Neo4j Graph Will Appear Here
+
+        </div>
+
+
+        <br><br>
+
+        <button id="testBtn">
+            Test It Out
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- POPUP -->
+
+<div id="popup"
+
+     style="display:none;
+                position:fixed;
+                top:50%;
+                left:50%;
+                transform:translate(-50%, -50%);
+                border:1px solid black;
+                padding:20px;
+                background:white;
+                width:500px;">
+
+    <h2>Add API Service</h2>
+
+
+    <!-- SEARCH -->
+
+    <label>Search Service</label>
+
+    <br>
+
+    <input type="text"
+           id="serviceSearch"
+           placeholder="Type service name">
+
+    <br><br>
+
+
+    <select id="searchResults"
+            multiple
+            size="5">
+
+    </select>
+
+    <br><br>
+
+
+
+    <!-- ENDPOINT -->
+
+    <label>Endpoint</label>
+
+    <br>
+
+    <input type="text"
+           id="endpointInput"
+           value="/api/v1/default">
+
+    <br><br>
+
+
+
+    <!-- EXISTING SERVICES -->
+
+    <label>Existing Services</label>
+
+    <br><br>
+
+    <div id="existingServicesBoxes">
+
+    </div>
+
+    <br><br>
+
+
+
+    <!-- DEPENDENCIES -->
+
+    <label>Add Dependencies</label>
+
+    <br><br>
+
+    <div id="dependenciesList">
+
+    </div>
+
+    <br><br>
+
+
+
+    <!-- BUTTONS -->
+
+    <button id="addServiceBtn">
+        Add Service
+    </button>
+
+    <button id="closePopupBtn">
+        Close
+    </button>
+
+</div>
+
+
+<script src="mainPage.js"></script>
+
+</body>
+
+</html>
