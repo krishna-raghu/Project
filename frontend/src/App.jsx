@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import Sidebar from './components/Sidebar';
 import ProjectHub from './pages/ProjectHub';
 import CreateProjectPopup from './pages/CreateProjectPopup';
@@ -14,8 +18,12 @@ import UserProfile from './pages/UserProfile';
 import ActivityPage from './pages/ActivityPage';
 import SettingsPage from './pages/SettingsPage';
 
+
 export default function App() {
-  const [activePage, setActivePage] = useState('home');
+
+  // Start on the login page instead of home. Once you have real auth,
+  // flip this based on whether a session/token already exists.
+  const [activePage, setActivePage] = useState('login');
   const [pageHistory, setPageHistory] = useState([]);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showAddService, setShowAddService] = useState(false);
@@ -27,6 +35,10 @@ export default function App() {
     role: 'Administrator',
     initials: 'KS',
   };
+
+  // Pages that should render full-screen, without the Sidebar/main shell.
+  const authPages = ['login', 'signup', 'forgot-password'];
+  const isAuthPage = authPages.includes(activePage);
 
   const handleNavigate = (page) => {
     if (page === 'home') {
@@ -68,6 +80,12 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
+      case 'login':
+        return <Login onNavigate={handleNavigate} />;
+      case 'signup':
+        return <Signup onNavigate={handleNavigate} />;
+      case 'forgot-password':
+        return <ForgotPassword onNavigate={handleNavigate} />;
       case 'home':
         return (
           <ProjectHub
@@ -146,6 +164,12 @@ export default function App() {
         );
     }
   };
+
+  // Auth pages (login/signup/forgot-password) render full-screen with no
+  // Sidebar and no app shell, since the user isn't "in" the app yet.
+  if (isAuthPage) {
+    return <div className="min-h-screen bg-dark-bg">{renderPage()}</div>;
+  }
 
   return (
     <div className="flex min-h-screen bg-dark-bg">
