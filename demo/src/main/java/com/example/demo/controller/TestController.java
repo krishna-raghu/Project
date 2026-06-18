@@ -2,51 +2,32 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.service.Neo4jTestService;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/test")
+@CrossOrigin(origins = "*")
 public class TestController {
 
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private Neo4jTestService neo4jTestService;
-
-    // Test Backend
-    @GetMapping
-    public String test() {
-        return "Backend Connected Successfully";
-    }
-
-    // Insert User into PostgreSQL
-    @PostMapping("/user")
-    public User createUser() {
+    @PostMapping("/create-profile")
+    public User createTestingProfile(
+            @RequestParam String id,
+            @RequestParam String fullName,
+            @RequestParam String username) {
 
         User user = new User();
 
-        user.setUsername("abc");
-        user.setEmail("abc@test.com");
-        user.setPasswordHash("abc123");
+        user.setId(UUID.fromString(id));
+        user.setFullName(fullName);
+        user.setUsername(username);
+        user.setRole("user");
 
         return userRepository.save(user);
-    }
-
-    // Fetch all users from PostgreSQL
-    @GetMapping("/users")
-    public Iterable<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    @GetMapping("/neo4j")
-    public String testNeo4j() {
-
-        neo4jTestService.createTestNode();
-
-        return "Node Created Successfully";
     }
 }
