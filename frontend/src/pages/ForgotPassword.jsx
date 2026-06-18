@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-
-/**
- * Nervix — Forgot password
- * Matches the rest of the app's navigation style: takes an onNavigate(page)
- * prop instead of using react-router. Submitting the email flips the card
- * into a "check your inbox" confirmation state — no real request is sent
- * yet. Swap handleSubmit for a real API call when ready.
- */
+import { supabase } from "../supabaseClient"; // Ensure this path correctly points to your initialized client file
 
 const styles = `
   .nx-root {
@@ -179,6 +172,12 @@ const styles = `
     background: #79BEEA;
   }
 
+  .nx-submit:disabled {
+    background: #3A6B8F;
+    color: #4C5C78;
+    cursor: not-allowed;
+  }
+
   .nx-submit:active {
     transform: scale(0.99);
   }
@@ -249,6 +248,17 @@ const styles = `
     background: rgba(93,173,226,0.08);
     border-color: rgba(93,173,226,0.6);
   }
+
+  .nx-error {
+    color: #EA4335;
+    background: rgba(234, 67, 53, 0.1);
+    border: 1px solid rgba(234, 67, 53, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
 `;
 
 function MailIcon() {
@@ -272,15 +282,39 @@ function ArrowLeftIcon() {
 export default function ForgotPassword({ onNavigate }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Password reset requested for:", email);
-    setSubmitted(true);
+    setErrorMessage("");
+    setLoading(true);
+
+    // Call live Supabase password reset link engine
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`, // Make sure to add a matching update route later!
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      console.log("Password reset link sent to:", email);
+      setSubmitted(true);
+    }
   };
 
-  const handleResend = () => {
-    console.log("Resending reset email to:", email);
+  const handleResend = async () => {
+    setErrorMessage("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      alert("Reset email resent successfully!");
+    }
   };
 
   return (
@@ -302,6 +336,8 @@ export default function ForgotPassword({ onNavigate }) {
           <ArrowLeftIcon />
           Back to sign in
         </button>
+
+        {errorMessage && <div className="nx-error">{errorMessage}</div>}
 
         {!submitted ? (
           <>
@@ -327,8 +363,8 @@ export default function ForgotPassword({ onNavigate }) {
                 </div>
               </div>
 
-              <button type="submit" className="nx-submit">
-                Send reset link
+              <button type="submit" className="nx-submit" disabled={loading}>
+                {loading ? "Sending link..." : "Send reset link"}
               </button>
             </form>
           </>

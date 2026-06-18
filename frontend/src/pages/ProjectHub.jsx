@@ -132,9 +132,6 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
 
 
 
-
-
-
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-dark-card border border-dark-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">

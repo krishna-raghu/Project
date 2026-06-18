@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-
-/**
- * Nervix — Sign up
- * Matches the rest of the app's navigation style: takes an onNavigate(page)
- * prop instead of using react-router. Auth itself is still a stub —
- * handleSubmit and the OAuth buttons just call onNavigate('home') on click.
- * Swap them for real API calls when your backend is ready.
- */
+import { supabase } from "../supabaseClient"; // Ensure this path correctly points to your initialized file
 
 const styles = `
   .nx-root {
@@ -236,6 +229,12 @@ const styles = `
     background: #79BEEA;
   }
 
+  .nx-submit:disabled {
+    background: #3A6B8F;
+    color: #4C5C78;
+    cursor: not-allowed;
+  }
+
   .nx-submit:active {
     transform: scale(0.99);
   }
@@ -313,6 +312,17 @@ const styles = `
     text-decoration: underline;
   }
 
+  .nx-error {
+    color: #EA4335;
+    background: rgba(234, 67, 53, 0.1);
+    border: 1px solid rgba(234, 67, 53, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
   @media (max-width: 380px) {
     .nx-name-row {
       flex-direction: column;
@@ -359,30 +369,67 @@ function getStrength(password) {
 
 export default function Signup({ onNavigate }) {
   const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState(""); // Added to map metadata to PostgreSQL profiles
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const strength = getStrength(password);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: replace with real account-creation call.
-    console.log("Signup submit:", { fullName, email, password, agreed });
-    onNavigate("home");
+    setErrorMessage("");
+
+    if (!agreed) {
+      setErrorMessage("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    setLoading(true);
+
+    // Call live Supabase Authentication registration
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        // Metadata objects are intercepted directly by our SQL Function/Trigger
+        data: {
+          full_name: fullName,
+          username: username,
+        },
+      },
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      console.log("Registration complete:", data);
+      alert("Registration successful! Check your email for verification.");
+      onNavigate("login");
+    }
   };
 
-  const handleGoogleSignUp = () => {
-    // TODO: replace with real OAuth flow.
-    console.log("Sign up with Google");
-    onNavigate("home");
+  const handleGoogleSignUp = async () => {
+    setErrorMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) setErrorMessage(error.message);
   };
 
-  const handleGithubSignUp = () => {
-    // TODO: replace with real OAuth flow.
-    console.log("Sign up with GitHub");
-    onNavigate("home");
+  const handleGithubSignUp = async () => {
+    setErrorMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) setErrorMessage(error.message);
   };
 
   return (
@@ -399,6 +446,8 @@ export default function Signup({ onNavigate }) {
         <h1 className="nx-title">Create your Nervix account</h1>
         <p className="nx-subtitle">Start mapping in minutes — no credit card required.</p>
 
+        {errorMessage && <div className="nx-error">{errorMessage}</div>}
+
         <form onSubmit={handleSubmit}>
           <div className="nx-field">
             <label className="nx-label" htmlFor="signup-name">Full name</label>
@@ -411,6 +460,23 @@ export default function Signup({ onNavigate }) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 autoComplete="name"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="nx-field">
+            <label className="nx-label" htmlFor="signup-username">Username</label>
+            <div className="nx-input-wrap">
+              <input
+                id="signup-username"
+                type="text"
+                className="nx-input"
+                placeholder="janedoe123"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
               />
             </div>
           </div>
@@ -426,6 +492,7 @@ export default function Signup({ onNavigate }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                required
               />
             </div>
           </div>
@@ -442,6 +509,7 @@ export default function Signup({ onNavigate }) {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
                 style={{ paddingRight: 56 }}
+                required
               />
               <button
                 type="button"
@@ -474,8 +542,8 @@ export default function Signup({ onNavigate }) {
             </span>
           </label>
 
-          <button type="submit" className="nx-submit">
-            Create account
+          <button type="submit" className="nx-submit" disabled={loading}>
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
