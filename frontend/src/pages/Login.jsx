@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-
-/**
- * Nervix — Login
- * Matches the rest of the app's navigation style: takes an onNavigate(page)
- * prop instead of using react-router. Auth itself is still a stub —
- * handleSubmit and the OAuth buttons just call onNavigate('home') on click.
- * Swap them for real API calls when your backend is ready.
- */
+import { supabase } from "../supabaseClient"; // Ensure this path points to your initialized client file
 
 const styles = `
   .nx-root {
@@ -299,6 +292,17 @@ const styles = `
     color: #E8E0CC;
     text-decoration: underline;
   }
+
+  .nx-error {
+    color: #EA4335;
+    background: rgba(234, 67, 53, 0.1);
+    border: 1px solid rgba(234, 67, 53, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
 `;
 
 function GoogleIcon() {
@@ -325,24 +329,50 @@ export default function Login({ onNavigate }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(""); // Track authentication errors
+  const [loading, setLoading] = useState(false);        // Manage button loading state
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: replace with real authentication call.
-    console.log("Login submit:", { email, password, remember });
-    onNavigate("home");
+    setErrorMessage("");
+    setLoading(true);
+
+    // Call live Supabase Authentication engine
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      console.log("Login successful structure:", data);
+      onNavigate("home");
+    }
   };
 
-  const handleGoogleSignIn = () => {
-    // TODO: replace with real OAuth flow.
-    console.log("Sign in with Google");
-    onNavigate("home");
+  const handleGoogleSignIn = async () => {
+    setErrorMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin // Automatically points back to your React local/production url
+      }
+    });
+    if (error) setErrorMessage(error.message);
   };
 
-  const handleGithubSignIn = () => {
-    // TODO: replace with real OAuth flow.
-    console.log("Sign in with GitHub");
-    onNavigate("home");
+  const handleGithubSignIn = async () => {
+    setErrorMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) setErrorMessage(error.message);
   };
 
   return (
@@ -359,6 +389,9 @@ export default function Login({ onNavigate }) {
         <h1 className="nx-title">Welcome back to Nervix</h1>
         <p className="nx-subtitle">Sign in to continue to your dashboard.</p>
 
+        {/* Display clear errors if credentials fail */}
+        {errorMessage && <div className="nx-error">{errorMessage}</div>}
+
         <form onSubmit={handleSubmit}>
           <div className="nx-field">
             <label className="nx-label" htmlFor="login-email">Email</label>
@@ -371,6 +404,7 @@ export default function Login({ onNavigate }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                required
               />
             </div>
           </div>
@@ -387,6 +421,7 @@ export default function Login({ onNavigate }) {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 style={{ paddingRight: 56 }}
+                required
               />
               <button
                 type="button"
@@ -417,8 +452,8 @@ export default function Login({ onNavigate }) {
             </button>
           </div>
 
-          <button type="submit" className="nx-submit">
-            Sign in
+          <button type="submit" className="nx-submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
