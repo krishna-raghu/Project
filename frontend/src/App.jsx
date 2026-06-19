@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -17,7 +17,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import UserProfile from './pages/UserProfile';
 import ActivityPage from './pages/ActivityPage';
 import SettingsPage from './pages/SettingsPage';
-
+import { supabase } from './supabaseClient';
 
 export default function App() {
 
@@ -29,6 +29,24 @@ export default function App() {
   const [showAddService, setShowAddService] = useState(false);
   const [showAddDependency, setShowAddDependency] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+
+
+  //supabase auth
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        setActivePage('home');
+      }
+    };
+
+    checkSession();
+  }, []);
+
+
 
   const user = {
     name: 'Krishna Singh',
@@ -135,12 +153,6 @@ export default function App() {
             onBack={handleBack}
           />
         );
-      case 'profile':
-        return (
-          <UserProfile
-            onBack={handleBack}
-          />
-        );
       case 'activity':
         return (
           <ActivityPage
@@ -154,6 +166,13 @@ export default function App() {
             project={selectedProject}
           />
         );
+        case 'profile':
+          return (
+            <UserProfile
+              onBack={handleBack}
+              onNavigate={handleNavigate}
+            />
+          );
       default:
         return (
           <ProjectHub
