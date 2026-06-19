@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Edit2, Shield, User, Clock, Bell } from 'lucide-react';
 import EditProfilePopup from './EditProfilePopup';
+import { supabase } from '../supabaseClient';
 
-export default function UserProfile({ onBack }) {
+export default function UserProfile({ onBack, onNavigate}) {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [twoFactor, setTwoFactor] = useState(true);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    onNavigate("login");
+  };
 
   const user = {
     name: 'Krishna Singh',
@@ -135,6 +141,14 @@ export default function UserProfile({ onBack }) {
               Change
             </button>
           </div>
+          <div>
+              <button
+                 onClick={handleLogout}
+                 className="px-4 py-2 bg-red-600 rounded-lg">
+                 Logout
+              </button>
+          </div>
+
         </div>
       </div>
 
