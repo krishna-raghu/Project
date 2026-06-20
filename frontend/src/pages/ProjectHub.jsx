@@ -1,11 +1,13 @@
-import React from 'react';
+//import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Plus, Search, Shield, ArrowUpRight, Clock, MoveHorizontal as MoreHorizontal, TriangleAlert as AlertTriangle, Activity, Zap, Link2 } from 'lucide-react';
 
-const featuredProjects = [
-  { id: 'PRJ-0012', name: 'Payment Gateway V2', icon: 'P', color: 'bg-blue-500', desc: 'Microservice architecture for payment processing system', services: 25, dependencies: 44, health: 'Healthy', status: 'Good', updated: '2m ago' },
-  { id: 'PRJ-0013', name: 'User Management', icon: 'U', color: 'bg-purple-500', desc: 'User identity and access management system', services: 18, dependencies: 32, health: 'Healthy', status: 'Stable', updated: '5m ago' },
-  { id: 'PRJ-0014', name: 'Inventory System', icon: 'I', color: 'bg-amber-500', desc: 'Inventory tracking and management system', services: 15, dependencies: 23, health: 'Healthy', status: 'Stable', updated: '10m ago' },
-];
+// const featuredProjects = [
+//   { id: 'PRJ-0012', name: 'Payment Gateway V2', icon: 'P', color: 'bg-blue-500', desc: 'Microservice architecture for payment processing system', services: 25, dependencies: 44, health: 'Healthy', status: 'Good', updated: '2m ago' },
+//   { id: 'PRJ-0013', name: 'User Management', icon: 'U', color: 'bg-purple-500', desc: 'User identity and access management system', services: 18, dependencies: 32, health: 'Healthy', status: 'Stable', updated: '5m ago' },
+//   { id: 'PRJ-0014', name: 'Inventory System', icon: 'I', color: 'bg-amber-500', desc: 'Inventory tracking and management system', services: 15, dependencies: 23, health: 'Healthy', status: 'Stable', updated: '10m ago' },
+// ];
 
 const recentActivity = [
   { icon: AlertTriangle, color: 'text-danger', text: 'Payment Service triggered a fault', time: '2m ago' },
@@ -22,6 +24,28 @@ const stats = [
 ];
 
 export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }) {
+  
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+
+    axios
+      .get('http://localhost:8080/projects')
+      .then((response) => {
+
+        console.log('Projects received:', response.data);
+
+        setProjects(response.data);
+
+      })
+      .catch((error) => {
+
+        console.error('Error fetching projects:', error);
+
+      });
+
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -63,20 +87,21 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
           <button className="text-sm text-primary hover:underline">View all</button>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          {featuredProjects.map((project) => (
+          {projects.map((project) => (
             <button
-              key={project.id}
+              key={project.projectId}
               onClick={() => onSelectProject(project)}
               className="text-left bg-dark-card-2 border border-dark-border rounded-lg p-4 hover:border-primary/50 hover:bg-dark-card-2/80 transition-all"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 ${project.color} rounded-lg flex items-center justify-center text-white font-semibold`}>
-                    {project.icon}
+                  <div className={`w-10 h-10 ${['bg-blue-500','bg-purple-500','bg-amber-500','bg-green-500','bg-red-500','bg-pink-500'][project.projectId % 6]
+  } rounded-lg flex items-center justify-center text-white font-semibold`}>
+                    {project.projectName?.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-text-primary">{project.name}</div>
-                    <div className="text-xs text-text-muted">{project.desc}</div>
+                    <div className="text-sm font-semibold text-text-primary">{project.projectName}</div>
+                    <div className="text-xs text-text-muted">{project.description}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">

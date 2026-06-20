@@ -1,43 +1,31 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Entity
 @Table(name = "projects")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "project_id")
     private Long projectId;
 
+    @Column(name = "project_name")
     private String projectName;
 
-    private String projectPasswordHash;
+    private String description;
 
-    public Project() {
-    }
+    private String status;
 
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
-    }
-
-    public String getProjectName() {
-        return projectName;
-    }
-
-    public void setProjectName(String projectName) {
-        this.projectName = projectName;
-    }
-
-    public String getProjectPasswordHash() {
-        return projectPasswordHash;
-    }
-
-    public void setProjectPasswordHash(String projectPasswordHash) {
-        this.projectPasswordHash = projectPasswordHash;
-    }
+    @Column(name = "owner_id")
+    private Integer ownerId;
 }
