@@ -1,68 +1,53 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.sql.Timestamp;
 
 @Entity
-@Table(name = "profiles", schema = "public")
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
 
     @Id
-    private UUID id;
-
-    @Column(name = "username")
-    private String username;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
+    private Integer userId;
 
     @Column(name = "full_name")
     private String fullName;
 
-    @Column(name = "role")
+    private String username;
+
+    private String email;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "profile_image")
+    private String profileImage;
+
+    private String timezone;
+
+    private String language;
+
     private String role;
 
+    @Column(name = "is_active")
+    private Boolean isActive;
+
+    @Column(name = "last_login")
+    private Timestamp lastLogin;
+
     @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    private Timestamp createdAt;
 
-    public User() {
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    @Column(name = "updated_at")
+    private Timestamp updatedAt;
 }

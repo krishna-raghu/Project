@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient"; // Ensure this path points to your initialized client file
-
+import axios from "axios";
 const styles = `
   .nx-root {
     min-height: 100vh;
@@ -333,23 +333,32 @@ export default function Login({ onNavigate }) {
   const [loading, setLoading] = useState(false);        // Manage button loading state
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     setErrorMessage("");
     setLoading(true);
 
-    // Call live Supabase Authentication engine
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    try {
 
-    setLoading(false);
-
-    if (error) {
-      setErrorMessage(error.message);
-    } else {
-      console.log("Login successful structure:", data);
-      onNavigate("home");
+      const response = await axios.post(
+        "http://localhost:8080/auth/login",
+        {
+          email: email,
+          password: password
+        }
+      );
+      setLoading(false);
+      if (response.data === "LOGIN_SUCCESS") {
+        console.log("Login Successful");
+        onNavigate("home");
+      } else {
+        setErrorMessage("Invalid Email or Password");
+      }
+    } catch (error) {
+      setLoading(false);
+      setErrorMessage("Login Failed");
+      console.error(error);
     }
   };
 

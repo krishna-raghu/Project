@@ -2,9 +2,18 @@ package com.example.demo.dto;
 
 public class SignupRequest {
 
+    private String fullName;
     private String username;
     private String email;
     private String password;
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
 
     public String getUsername() {
         return username;

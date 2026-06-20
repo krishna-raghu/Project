@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient"; // Ensure this path correctly points to your initialized file
-
+import axios from "axios";
 const styles = `
   .nx-root {
     min-height: 100vh;
@@ -379,38 +379,52 @@ export default function Signup({ onNavigate }) {
 
   const strength = getStrength(password);
 
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setErrorMessage("");
 
     if (!agreed) {
-      setErrorMessage("You must agree to the Terms of Service and Privacy Policy.");
+      setErrorMessage(
+        "You must agree to the Terms of Service and Privacy Policy."
+      );
       return;
     }
 
     setLoading(true);
 
-    // Call live Supabase Authentication registration
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        // Metadata objects are intercepted directly by our SQL Function/Trigger
-        data: {
-          full_name: fullName,
+    try {
+
+      const response = await axios.post(
+        "http://localhost:8080/auth/signup",
+        {
+          fullName: fullName,
           username: username,
-        },
-      },
-    });
+          email: email,
+          password: password
+        }
+      );
 
-    setLoading(false);
+      console.log(response.data);
 
-    if (error) {
-      setErrorMessage(error.message);
-    } else {
-      console.log("Registration complete:", data);
-      alert("Registration successful! Check your email for verification.");
+      alert("Account created successfully!");
+
       onNavigate("login");
+
+    } catch (error) {
+
+      console.error(error);
+
+      if (error.response?.data) {
+        setErrorMessage(error.response.data);
+      } else {
+        setErrorMessage("Signup failed");
+      }
+
+    } finally {
+      setLoading(false);
     }
   };
 
