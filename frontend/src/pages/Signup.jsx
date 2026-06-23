@@ -394,16 +394,29 @@ export default function Signup({ onNavigate }) {
     }
 
     setLoading(true);
-
     try {
+
+      // STEP 1: Create user in Supabase Auth
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // STEP 2: Send user data + Supabase UID to Spring Boot
 
       const response = await axios.post(
         "http://localhost:8080/auth/signup",
         {
-          fullName: fullName,
-          username: username,
-          email: email,
-          password: password
+          fullName,
+          username,
+          email,
+          password,
+          supabaseUid: data.user.id,
         }
       );
 
@@ -420,10 +433,11 @@ export default function Signup({ onNavigate }) {
       if (error.response?.data) {
         setErrorMessage(error.response.data);
       } else {
-        setErrorMessage("Signup failed");
+        setErrorMessage(error.message || "Signup failed");
       }
 
-    } finally {
+    }
+     finally {
       setLoading(false);
     }
   };

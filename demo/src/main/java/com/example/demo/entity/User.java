@@ -50,4 +50,15 @@ public class User {
 
     @Column(name = "updated_at")
     private Timestamp updatedAt;
+
+    @Column(name = "supabase_uid")
+    private String supabaseUid;
+
+    public String getSupabaseUid() {
+        return supabaseUid;
+    }
+
+    public void setSupabaseUid(String supabaseUid) {
+        this.supabaseUid = supabaseUid;
+    }
 }

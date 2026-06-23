@@ -33,8 +33,10 @@ public class AuthService {
         user.setPasswordHash(
                 passwordEncoder.encode(request.getPassword()));
 
-        userRepository.save(user);
+        user.setSupabaseUid(
+                request.getSupabaseUid());
 
+        userRepository.save(user);
         return "Signup Success";
     }
 }

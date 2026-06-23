@@ -38,4 +38,14 @@ public class SignupRequest {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    private String supabaseUid;
+
+    public String getSupabaseUid() {
+        return supabaseUid;
+    }
+
+    public void setSupabaseUid(String supabaseUid) {
+        this.supabaseUid = supabaseUid;
+    }
 }

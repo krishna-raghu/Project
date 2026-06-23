@@ -36,8 +36,15 @@ public class SecurityConfig {
 
                 // 3. Configure endpoint protection rules
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // Secure everything else!
-                )
+                        .requestMatchers(
+                                "/auth/**")
+                        .permitAll()
+
+                        .requestMatchers(
+                                "/projects/my-projects")
+                        .authenticated()
+
+                        .anyRequest().permitAll())
 
                 // 4. Enable the OAuth2 Resource Server to automatically read Supabase JWTs
                 .oauth2ResourceServer(oauth2 -> oauth2

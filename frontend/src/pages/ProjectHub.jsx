@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Search, Shield, ArrowUpRight, Clock, MoveHorizontal as MoreHorizontal, TriangleAlert as AlertTriangle, Activity, Zap, Link2 } from 'lucide-react';
-
+import { supabase } from "../supabaseClient";
 // const featuredProjects = [
 //   { id: 'PRJ-0012', name: 'Payment Gateway V2', icon: 'P', color: 'bg-blue-500', desc: 'Microservice architecture for payment processing system', services: 25, dependencies: 44, health: 'Healthy', status: 'Good', updated: '2m ago' },
 //   { id: 'PRJ-0013', name: 'User Management', icon: 'U', color: 'bg-purple-500', desc: 'User identity and access management system', services: 18, dependencies: 32, health: 'Healthy', status: 'Stable', updated: '5m ago' },
@@ -29,20 +29,29 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
 
   useEffect(() => {
 
-    axios
-      .get('http://localhost:8080/projects')
-      .then((response) => {
+    const loadProjects = async () => {
 
-        console.log('Projects received:', response.data);
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      
+      console.log(session);
+      console.log(session?.access_token);
+      
+      const response = await axios.get(
+        "http://localhost:8080/projects/my-projects",
+        {
+          headers: {
+            Authorization:
+              `Bearer ${session.access_token}`
+          }
+        }
+      );
 
-        setProjects(response.data);
+      setProjects(response.data);
+    };
 
-      })
-      .catch((error) => {
-
-        console.error('Error fetching projects:', error);
-
-      });
+    loadProjects();
 
   }, []);
 
