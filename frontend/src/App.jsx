@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from "axios";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -32,6 +33,8 @@ export default function App() {
 
 
   //supabase auth
+
+
   useEffect(() => {
     const checkSession = async () => {
       const {
@@ -39,13 +42,31 @@ export default function App() {
       } = await supabase.auth.getSession();
 
       if (session) {
-        setActivePage('home');
+
+        try {
+          await axios.post(
+            "http://localhost:8080/auth/oauth-signup",
+            {
+              fullName:
+                session.user.user_metadata?.full_name ||
+                session.user.user_metadata?.name ||
+                "User",
+
+              email: session.user.email,
+
+              supabaseUid: session.user.id,
+            }
+          );
+        } catch (err) {
+          console.error("OAuth sync failed:", err);
+        }
+
+        setActivePage("home");
       }
     };
 
     checkSession();
   }, []);
-
 
 
   const user = {
