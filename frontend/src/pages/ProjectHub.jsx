@@ -23,8 +23,8 @@ const stats = [
   { label: 'Critical Services', value: '4', change: '-2%', positive: false },
 ];
 
-export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }) {
-  
+export default function ProjectHub({  userData, onNavigate, onNewProject, onSelectProject }) {
+  //console.log("ProjectHub userData:", userData);
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
@@ -83,8 +83,12 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
             onClick={() => onNavigate('profile')}
             className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-sm hover:bg-primary-hover transition-colors"
           >
-            KS
-          </button>
+            {userData?.fullName
+                ?.split(' ')
+                .map(word => word[0])
+                .join('')
+                .toUpperCase() || 'KS'}
+            </button>
         </div>
       </div>
 
