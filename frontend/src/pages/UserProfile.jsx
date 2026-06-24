@@ -3,10 +3,11 @@ import { ArrowLeft, Edit2, Shield, User, Clock, Bell } from 'lucide-react';
 import EditProfilePopup from './EditProfilePopup';
 import { supabase } from '../supabaseClient';
 
-export default function UserProfile({ onBack, onNavigate}) {
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [twoFactor, setTwoFactor] = useState(true);
+export default function UserProfile({ userData, onBack, onNavigate }) {
+    console.log("Profile received:", userData);
+    const [showEditProfile, setShowEditProfile] = useState(false);
+    const [notifications, setNotifications] = useState(true);
+   const [twoFactor, setTwoFactor] = useState(true);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -14,10 +15,15 @@ export default function UserProfile({ onBack, onNavigate}) {
   };
 
   const user = {
-    name: 'Krishna Singh',
-    email: 'krishna@example.com',
-    role: 'Administrator',
-    initials: 'KS',
+    name: userData?.fullName || '',
+    email: userData?.email || '',
+    role: userData?.role || '',
+    initials:
+      userData?.fullName
+        ?.split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase() || '',
     memberSince: 'May 10, 2024',
     timezone: 'Asia/Kolkata',
     language: 'English',

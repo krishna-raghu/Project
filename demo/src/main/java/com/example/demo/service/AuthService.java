@@ -6,6 +6,7 @@ import com.example.demo.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.example.demo.dto.OAuthSignupRequest;
+import com.example.demo.dto.UserProfileResponse;
 
 
 @Service
@@ -19,7 +20,7 @@ public class AuthService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
-    // for emal users to go in users table
+    // for email users to go in users table
     public String signup(SignupRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -70,4 +71,21 @@ public class AuthService {
 
         return "USER_CREATED";
     }
+
+    //supabaseUid -> find user in DB -> create response DTO  ->   send to React
+    public UserProfileResponse getUserProfile(
+            String supabaseUid) {
+
+        User user = userRepository
+                .findBySupabaseUid(supabaseUid)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        return new UserProfileResponse(
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+
 }

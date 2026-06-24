@@ -42,24 +42,32 @@ export default function Sidebar({ activePage, setActivePage, user }) {
       </nav>
 
 
-      <div className="p-3 border-t border-dark-border">
-        <button
-          onClick={() => setActivePage('profile')}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-            activePage === 'profile' ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:bg-dark-card-2 hover:text-text-primary'
+      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+        {
+          user?.fullName
+            ?.split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase() || 'AK'
+        }
+      </div>
+
+
+
+      <div className="flex-1 text-left">
+        <div
+          className={`text-sm font-medium ${
+            activePage === 'profile'
+              ? 'text-primary'
+              : 'text-text-primary'
           }`}
         >
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-            {user?.initials || 'KS'}
-          </div>
-          <div className="flex-1 text-left">
-            <div className={`text-sm font-medium ${activePage === 'profile' ? 'text-primary' : 'text-text-primary'}`}>
-              {user?.name || 'Krishna Singh'}
-            </div>
-            <div className="text-text-muted text-xs">{user?.role || 'Administrator'}</div>
-          </div>
-          <ChevronDown size={14} className="text-text-muted" />
-        </button>
+          {user?.fullName || 'User'}
+        </div>
+
+        <div className="text-text-muted text-xs">
+          {user?.role || 'Member'}
+        </div>
       </div>
     </aside>
   );
