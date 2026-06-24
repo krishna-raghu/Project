@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.SignupRequest;
+import com.example.demo.dto.OAuthSignupRequest;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.AuthService;
@@ -49,5 +50,12 @@ public class AuthController {
         }
 
         return "INVALID_CREDENTIALS";
+    }
+
+    @PostMapping("/oauth-signup")
+    public String oauthSignup(
+            @RequestBody OAuthSignupRequest request) {
+
+        return authService.oauthSignup(request);
     }
 }
