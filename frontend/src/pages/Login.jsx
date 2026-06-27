@@ -349,18 +349,27 @@ export default function Login({ onNavigate }) {
         }
       );
       setLoading(false);
-      if (response.data === "LOGIN_SUCCESS") {
-        console.log("Login Successful");
-        onNavigate("home");
-      } else {
-        setErrorMessage("Invalid Email or Password");
-      }
-    } catch (error) {
-      setLoading(false);
-      setErrorMessage("Login Failed");
-      console.error(error);
-    }
-  };
+     if (response.data && response.data.message === "LOGIN_SUCCESS") {
+       console.log("Login Successful");
+
+       // Save the custom backend token
+       localStorage.setItem('accessToken', response.data.token);
+
+       onNavigate("home");
+     } else if (response.data === "LOGIN_SUCCESS") {
+       // If your backend still returns just a string, it's missing the token!
+       console.warn("Backend sent LOGIN_SUCCESS but no token was provided.");
+       onNavigate("home");
+     } else {
+           setErrorMessage("Invalid Email or Password");
+         }
+
+       } catch (error) {
+         setLoading(false);
+         setErrorMessage("Login Failed");
+         console.error(error);
+       }
+     };
 
   const handleGoogleSignIn = async () => {
     setErrorMessage("");

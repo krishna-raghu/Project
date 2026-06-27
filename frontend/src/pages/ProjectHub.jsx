@@ -1,6 +1,7 @@
 //import React from 'react';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { supabase } from '../supabaseClient';
 import { Plus, Search, Shield, ArrowUpRight, Clock, MoveHorizontal as MoreHorizontal, TriangleAlert as AlertTriangle, Activity, Zap, Link2 } from 'lucide-react';
 
 // const featuredProjects = [
@@ -27,24 +28,40 @@ export default function ProjectHub({ onNavigate, onNewProject, onSelectProject }
   
   const [projects, setProjects] = useState([]);
 
-  useEffect(() => {
 
-    axios
-      .get('http://localhost:8080/projects')
-      .then((response) => {
+useEffect(() => {
+  // Listen for active auth changes (captures redirects perfectly)
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
 
-        console.log('Projects received:', response.data);
+    // We only want to fire the backend sync if a valid session exists
+    if (session) {
+      try {
+        const response = await axios.post(
+          "http://localhost:8080/auth/oauth-signup",
+          {
+            fullName:
+              session.user.user_metadata?.full_name ||
+              session.user.user_metadata?.name ||
+              "User",
+            email: session.user.email,
+            supabaseUid: session.user.id,
+          }
+        );
 
-        setProjects(response.data);
+        console.log("Backend sync response:", response.data);
 
-      })
-      .catch((error) => {
+      } catch (err) {
+        console.error("OAuth sync failed:", err);
+      }
+    }
+  });
 
-        console.error('Error fetching projects:', error);
+  // Clean up the listener when the component unmounts
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
 
-      });
-
-  }, []);
 
   return (
     <div className="p-6 space-y-6">
