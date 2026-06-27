@@ -11,7 +11,11 @@ public interface UserRepository
 
     Optional<User> findByUsername(String username);
 
+    Optional<User> findBySupabaseUid(String supabaseUid);
+
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    boolean existsBySupabaseUid(String supabaseUid);
 }
