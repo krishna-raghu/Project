@@ -61,4 +61,6 @@ public class User {
     public void setSupabaseUid(String supabaseUid) {
         this.supabaseUid = supabaseUid;
     }
+
+
 }
