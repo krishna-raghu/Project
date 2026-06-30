@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from "axios";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -18,7 +19,6 @@ import UserProfile from './pages/UserProfile';
 import ActivityPage from './pages/ActivityPage';
 import SettingsPage from './pages/SettingsPage';
 import { supabase } from './supabaseClient';
-
 export default function App() {
 
   // Start on the login page instead of home. Once you have real auth,
@@ -29,6 +29,8 @@ export default function App() {
   const [showAddService, setShowAddService] = useState(false);
   const [showAddDependency, setShowAddDependency] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [userData, setUserData] = useState(null);
+
 
 
   //supabase auth
@@ -39,7 +41,33 @@ export default function App() {
       } = await supabase.auth.getSession();
 
       if (session) {
-        setActivePage('home');
+
+        try {
+          await axios.post(
+            "http://localhost:8080/auth/oauth-signup",
+            {
+              fullName:
+                session.user.user_metadata?.full_name ||
+                session.user.user_metadata?.name ||
+                "User",
+
+              email: session.user.email,
+
+              supabaseUid: session.user.id,
+            }
+          );
+
+          const response = await axios.get(
+            `http://localhost:8080/auth/user/${session.user.id}`
+          );
+
+          setUserData(response.data);
+
+        } catch (err) {
+          console.error("Auth sync failed:", err);
+        }
+
+        setActivePage("home");
       }
     };
 
@@ -48,11 +76,11 @@ export default function App() {
 
 
 
-  const user = {
+  /*const user = {
     name: 'Krishna Singh',
     role: 'Administrator',
     initials: 'KS',
-  };
+  };*/
 
   // Pages that should render full-screen, without the Sidebar/main shell.
   const authPages = ['login', 'signup', 'forgot-password'];
@@ -107,6 +135,7 @@ export default function App() {
       case 'home':
         return (
           <ProjectHub
+            userData={userData}
             onNavigate={handleNavigate}
             onNewProject={handleNewProject}
             onSelectProject={handleSelectProject}
@@ -169,6 +198,7 @@ export default function App() {
         case 'profile':
           return (
             <UserProfile
+              userData={userData}
               onBack={handleBack}
               onNavigate={handleNavigate}
             />
@@ -176,6 +206,7 @@ export default function App() {
       default:
         return (
           <ProjectHub
+            userData={userData}
             onNavigate={handleNavigate}
             onNewProject={handleNewProject}
             onSelectProject={handleSelectProject}
@@ -192,7 +223,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-dark-bg">
-      <Sidebar activePage={activePage} setActivePage={handleNavigate} user={user} />
+      <Sidebar activePage={activePage} setActivePage={handleNavigate} user={userData} />
       <main className="flex-1 ml-56 min-h-screen overflow-auto">
         {renderPage()}
       </main>
