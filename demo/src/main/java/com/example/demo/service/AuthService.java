@@ -7,6 +7,9 @@ import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.example.demo.dto.OAuthSignupRequest;
+import com.example.demo.dto.UserProfileResponse;
+
 
 @Service
 public class AuthService {
@@ -19,7 +22,7 @@ public class AuthService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
-
+    // for email users to go in users table
     public String signup(SignupRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -35,8 +38,10 @@ public class AuthService {
         user.setPasswordHash(
                 passwordEncoder.encode(request.getPassword()));
 
-        userRepository.save(user);
+        user.setSupabaseUid(
+                request.getSupabaseUid());
 
+        userRepository.save(user);
         return "Signup Success";
     }
 

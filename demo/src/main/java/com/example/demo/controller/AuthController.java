@@ -63,6 +63,7 @@ public class AuthController {
         return authService.oauthSignup(request);
     }
 
+
     @GetMapping("/user/{supabaseUid}")
     public UserProfileResponse getUserProfile(
             @PathVariable String supabaseUid) {
