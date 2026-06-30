@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.OAuthSignupRequest;
 import com.example.demo.dto.SignupRequest;
+import com.example.demo.dto.UserProfileResponse;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -71,6 +72,22 @@ public class AuthService {
         userRepository.save(user);
 
         return "USER_CREATED";
+    }
+
+    //supabaseUid -> find user in DB -> create response DTO  ->   send to React
+    public UserProfileResponse getUserProfile(
+            String supabaseUid) {
+
+        User user = userRepository
+                .findBySupabaseUid(supabaseUid)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        return new UserProfileResponse(
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 
 

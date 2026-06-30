@@ -3,9 +3,12 @@ package com.example.demo.controller;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.SignupRequest;
 import com.example.demo.dto.OAuthSignupRequest;
+import com.example.demo.dto.UserProfileResponse;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.AuthService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -58,5 +61,13 @@ public class AuthController {
             @RequestBody OAuthSignupRequest request) {
 
         return authService.oauthSignup(request);
+    }
+
+    @GetMapping("/user/{supabaseUid}")
+    public UserProfileResponse getUserProfile(
+            @PathVariable String supabaseUid) {
+
+        return authService.getUserProfile(
+                supabaseUid);
     }
 }
