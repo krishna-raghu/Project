@@ -10,6 +10,7 @@ public class UserProfileResponse {
 
     public UserProfileResponse(
             String fullName,
+
             String email,
             String role) {
 

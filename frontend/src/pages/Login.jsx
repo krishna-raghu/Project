@@ -324,7 +324,7 @@ function GithubIcon() {
   );
 }
 
-export default function Login({ onNavigate }) {
+export default function Login({ onNavigate, setUserData }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -338,38 +338,53 @@ export default function Login({ onNavigate }) {
 
     setErrorMessage("");
     setLoading(true);
+try {
+    const response = await axios.post(
+      "http://localhost:8080/auth/login",
+      {
+        email: email,
+        password: password
+      }
+    );
 
-    try {
+    setLoading(false);
 
-      const response = await axios.post(
-        "http://localhost:8080/auth/login",
-        {
+    if (response.data && response.data.message === "LOGIN_SUCCESS") {
+      console.log("Login Successful");
+
+      // 1. Save the token
+      localStorage.setItem('accessToken', response.data.token);
+
+      // 2. Set the global userData state right here!
+      // (Assuming your backend login response includes user profile details like response.data.user)
+      if (response.data.user) {
+        setUserData(response.data.user);
+      } else {
+        // If your login endpoint only returns a token, mock minimal data so it's not blank
+        setUserData({
           email: email,
-          password: password
-        }
-      );
-      setLoading(false);
-     if (response.data && response.data.message === "LOGIN_SUCCESS") {
-       console.log("Login Successful");
+          fullName: response.data.fullName || "User Account",
+          role: response.data.role || "User"
+        });
+      }
 
-       // Save the custom backend token
-       localStorage.setItem('accessToken', response.data.token);
+      onNavigate("home");
+    } else if (response.data === "LOGIN_SUCCESS") {
+      console.warn("Backend sent LOGIN_SUCCESS but no token/user body was provided.");
 
-       onNavigate("home");
-     } else if (response.data === "LOGIN_SUCCESS") {
-       // If your backend still returns just a string, it's missing the token!
-       console.warn("Backend sent LOGIN_SUCCESS but no token was provided.");
-       onNavigate("home");
-     } else {
-           setErrorMessage("Invalid Email or Password");
-         }
+      setUserData({ email: email, fullName: "User Account" }); // Fallback safeguard
+      onNavigate("home");
+    } else {
+      setErrorMessage("Invalid Email or Password");
+    }
 
-       } catch (error) {
-         setLoading(false);
-         setErrorMessage("Login Failed");
-         console.error(error);
-       }
-     };
+  } catch (error) {
+    setLoading(false);
+    setErrorMessage("Login Failed");
+    console.error(error);
+  }
+};
+
 
   const handleGoogleSignIn = async () => {
     setErrorMessage("");

@@ -33,48 +33,71 @@ export default function App() {
 
 
 
-  //supabase auth
-  useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+  // Real-time Supabase Authentication State Sync (Handles Google & Email/Password instantly)
+    useEffect(() => {
 
-      if (session) {
+      // Core function responsible for registering or updating sessions across your stacks
+      const syncUserSession = async (session) => {
+        if (!session) {
+          setUserData(null);
+          return;
+        }
 
         try {
+          // 1. Sync authentication metadata context into your custom Spring Boot database backend
           await axios.post(
             "http://localhost:8080/auth/oauth-signup",
             {
+              // Checks multiple structural fallback paths to capture names from both social providers and email registers
               fullName:
                 session.user.user_metadata?.full_name ||
                 session.user.user_metadata?.name ||
-                "User",
+                session.user.user_metadata?.display_name ||
+                "User Account",
 
               email: session.user.email,
-
               supabaseUid: session.user.id,
             }
           );
 
+          // 2. Fetch the fully realized relational user object mapping from Spring Boot
           const response = await axios.get(
             `http://localhost:8080/auth/user/${session.user.id}`
           );
 
+          // 3. Populate app state globally so Sidebar and UserProfile elements sync perfectly
           setUserData(response.data);
+          setActivePage("home");
 
         } catch (err) {
-          console.error("Auth sync failed:", err);
+          console.error("Authentication synchronization sequence failure:", err);
         }
+      };
 
-        setActivePage("home");
-      }
-    };
+      // Subscribes to real-time session mutations (Triggers on explicit SIGNED_IN events from email inputs or OAuth steps)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          syncUserSession(session);
+        } else if (event === 'SIGNED_OUT') {
+          setUserData(null);
+          setActivePage("login");
+        }
+      });
 
-    checkSession();
-  }, []);
+      // Run an immediate initial evaluation sweep in case an authenticated browser token is already present on load
+      const checkInitialSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          syncUserSession(session);
+        }
+      };
+      checkInitialSession();
 
-
+      // Cleanup hook listener connection context automatically when the root App shell unmounts
+      return () => {
+        subscription.unsubscribe();
+      };
+    }, []);
 
   /*const user = {
     name: 'Krishna Singh',
@@ -127,7 +150,7 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'login':
-        return <Login onNavigate={handleNavigate} />;
+        return <Login onNavigate={handleNavigate}  setUserData={setUserData} />;
       case 'signup':
         return <Signup onNavigate={handleNavigate} />;
       case 'forgot-password':

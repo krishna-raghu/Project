@@ -82,7 +82,7 @@ export default function Sidebar({ activePage, setActivePage, user }) {
             </div>
           </div>
 
-          {/* Dropdown Icon */}
+         {/* Dropdown Icon */}
           <ChevronDown
             size={14}
             className="text-text-muted flex-shrink-0"

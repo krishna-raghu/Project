@@ -12,23 +12,27 @@ export default function UserProfile({ userData, onBack, onNavigate }) {
     await supabase.auth.signOut();
     onNavigate("login");
   };
+const user = {
+  // 1. Fallback to 'User Account' instead of '' if name is completely missing from DB
+  name: userData?.fullName || userData?.name || 'User Account',
+  email: userData?.email || '',
+  role: userData?.role || 'User',
 
-  const user = {
+  // 2. Safe calculation wrapper using a robust fallback string
+  initials: (userData?.fullName || userData?.name || 'User Account')
+    ?.split(' ')
+    .filter(Boolean)
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'UA',
 
-      name: userData?.fullName || '',
-      email: userData?.email || '',
-      role: userData?.role || '',
-      initials:
-        userData?.fullName
-          ?.split(' ')
-          .map(word => word[0])
-          .join('')
-          .toUpperCase() || '',
-      memberSince: 'May 10, 2024',
-      timezone: 'Asia/Kolkata',
-      language: 'English',
-      organization: 'Nervix Inc',
-    };
+  // 3. Robust defaults for metadata elements
+  memberSince: userData?.memberSince || userData?.createdAt || 'May 10, 2024',
+  timezone: userData?.timezone || 'Asia/Kolkata',
+  language: userData?.language || 'English',
+  organization: userData?.organization || 'Nervix Inc',
+};
 
    return (
       <div className="p-6 space-y-6">
