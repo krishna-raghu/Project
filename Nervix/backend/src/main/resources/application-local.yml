@@ -1,0 +1,26 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:55432/nervix
+    username: nervix
+    password: nervix_local_v4
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+  neo4j:
+    uri: bolt://localhost:57687
+    authentication:
+      username: neo4j
+      password: nervix_neo4j_local_v4
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://ypzerrmfawiuvbmowakd.supabase.co/auth/v1/.well-known/jwks.json
+          jws-algorithms:
+            - ES256
+            - RS256
