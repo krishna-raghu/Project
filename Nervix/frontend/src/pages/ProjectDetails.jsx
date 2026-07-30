@@ -5,10 +5,14 @@ import {
   Pencil, Trash2, ExternalLink,
 } from 'lucide-react';
 import EditProjectPopup from './EditProjectPopup';
+import AddServicePopup from './AddServicePopup';
 import FilterPopup from './FilterPopup';
 import ViewServiceDetailsPopup from './ViewServiceDetailsPopup';
 import ServiceFullDetailsPopup from './ServiceFullDetailsPopup';
-import { getProjectTeam } from '../api';
+import {
+  deleteDependency, deleteService, getDependencySummary, getProjectTeam,
+  getServiceSummary, listDependencies, listServices,
+} from '../api';
 
 /* ─── Static data ─── */
 
@@ -87,20 +91,38 @@ const archSummary = [
 
 /* ─── Helpers ─── */
 
-const healthBadge = (h) => ({ Healthy: 'bg-success/10 text-success', Warning: 'bg-warning/10 text-warning', Error: 'bg-danger/10 text-danger' }[h] || 'bg-success/10 text-success');
-const critBadge = (c) => ({ Critical: 'bg-danger/10 text-danger', High: 'bg-warning/10 text-warning', Medium: 'bg-amber-500/10 text-amber-400', Low: 'bg-success/10 text-success' }[c] || 'bg-dark-card-2 text-text-muted');
+const healthBadge = (h) => ({ Healthy: 'bg-success/10 text-success', HEALTHY: 'bg-success/10 text-success', Warning: 'bg-warning/10 text-warning', WARNING: 'bg-warning/10 text-warning', Error: 'bg-danger/10 text-danger', ERROR: 'bg-danger/10 text-danger', UNKNOWN: 'bg-dark-card-2 text-text-muted' }[h] || 'bg-dark-card-2 text-text-muted');
+const critBadge = (c) => ({ Critical: 'bg-danger/10 text-danger', CRITICAL: 'bg-danger/10 text-danger', High: 'bg-warning/10 text-warning', HIGH: 'bg-warning/10 text-warning', Medium: 'bg-amber-500/10 text-amber-400', MEDIUM: 'bg-amber-500/10 text-amber-400', Low: 'bg-success/10 text-success', LOW: 'bg-success/10 text-success' }[c] || 'bg-dark-card-2 text-text-muted');
 
 /* ─── Tab components ─── */
 
-function OverviewTab() {
+function OverviewTab({ services, summary, dependencySummary }) {
+  const total = summary?.total ?? services.length;
+  const health = summary?.byHealth || {};
+  const serviceHealthSummary = [
+    { label: 'Healthy', value: health.HEALTHY || 0, color: 'bg-success' },
+    { label: 'Warning', value: health.WARNING || 0, color: 'bg-warning' },
+    { label: 'Error', value: health.ERROR || 0, color: 'bg-danger' },
+    { label: 'Unknown', value: health.UNKNOWN || 0, color: 'bg-dark-border' },
+  ].map((item) => ({ ...item, percent: total ? `${Math.round((item.value / total) * 100)}%` : '0%' }));
+  const types = summary?.byType || {};
+  const serviceArchSummary = [
+    { label: 'Total Nodes', value: total },
+    { label: 'APIs', value: types.API || 0 },
+    { label: 'Databases', value: types.DATABASE || 0 },
+    { label: 'Caches', value: types.CACHE || 0 },
+    { label: 'Gateways', value: types.GATEWAY || 0 },
+    { label: 'Queues', value: types.QUEUE || 0 },
+    { label: 'Dependencies', value: dependencySummary?.total || 0 },
+  ];
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Services', value: 25, color: 'bg-primary' },
-          { label: 'Dependencies', value: 44, color: 'bg-purple-500' },
-          { label: 'Critical Nodes', value: 3, color: 'bg-danger' },
-          { label: 'Blast Radius Score', value: 18, color: 'bg-warning', sub: '+ High' },
+          { label: 'Services', value: total, color: 'bg-primary' },
+          { label: 'Dependencies', value: dependencySummary?.total || 0, color: 'bg-purple-500' },
+          { label: 'Critical Dependencies', value: dependencySummary?.critical || 0, color: 'bg-danger' },
+          { label: 'Blast Radius Score', value: 0, color: 'bg-warning', sub: 'Available after graph analysis' },
         ].map((stat) => (
           <div key={stat.label} className="bg-dark-card border border-dark-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -125,11 +147,11 @@ function OverviewTab() {
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#EF4444" strokeWidth="12" strokeDasharray="37.70 251.33" strokeDashoffset="-251.33" />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl font-bold text-text-primary">25</span>
+                <span className="text-xl font-bold text-text-primary">{total}</span>
               </div>
             </div>
             <div className="space-y-2.5">
-              {healthSummary.map((h) => (
+              {serviceHealthSummary.map((h) => (
                 <div key={h.label} className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${h.color}`}></div>
                   <span className="text-xs text-text-secondary">{h.label}</span>
@@ -143,7 +165,7 @@ function OverviewTab() {
         <div className="bg-dark-card border border-dark-border rounded-xl p-5">
           <h3 className="text-sm font-semibold text-text-primary mb-4">Architecture Summary</h3>
           <div className="space-y-2">
-            {archSummary.map((row) => (
+            {serviceArchSummary.map((row) => (
               <div key={row.label} className="flex items-center justify-between py-1 border-b border-dark-border/50 last:border-0">
                 <span className="text-sm text-text-secondary">{row.label}</span>
                 <span className="text-sm font-medium text-text-primary">{row.value}</span>
@@ -175,7 +197,7 @@ function OverviewTab() {
   );
 }
 
-function ServicesTab({ onAddService, onAddDependency }) {
+function ServicesTab({ services, loading, error, canEdit, canManage, onAddService, onEditService, onDeleteService, onAddDependency }) {
   const [showFilter, setShowFilter] = useState(false);
 
   return (
@@ -188,23 +210,27 @@ function ServicesTab({ onAddService, onAddDependency }) {
           <Filter size={14} />
           Filter
         </button>
-        <button
+        {canEdit && <button
           onClick={onAddDependency}
           className="flex items-center gap-2 px-4 py-2 bg-dark-card-2 border border-dark-border hover:border-primary text-text-primary rounded-lg text-sm font-medium transition-colors"
         >
           <Link2 size={16} />
           Add Dependency
-        </button>
-        <button
+        </button>}
+        {canEdit && <button
           onClick={onAddService}
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus size={16} />
           Add Service
-        </button>
+        </button>}
       </div>
 
       <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+        {error && <div className="p-4 text-danger text-sm">{error}</div>}
+        {loading && <div className="p-10 text-center text-text-muted">Loading services…</div>}
+        {!loading && !services.length && <div className="p-10 text-center text-text-muted">No services in this project yet.</div>}
+        {!loading && services.length > 0 &&
         <table className="w-full">
           <thead>
             <tr className="border-b border-dark-border">
@@ -214,31 +240,31 @@ function ServicesTab({ onAddService, onAddDependency }) {
             </tr>
           </thead>
           <tbody>
-            {projectServices.map((svc, i) => (
-              <tr key={i} className="border-b border-dark-border/50 hover:bg-dark-card-2/50 transition-colors">
+            {services.map((svc) => (
+              <tr key={svc.id} className="border-b border-dark-border/50 hover:bg-dark-card-2/50 transition-colors">
                 <td className="px-4 py-3"><span className="text-sm text-text-primary font-medium">{svc.name}</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.type}</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-muted font-mono">{svc.version}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.serviceType}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-muted font-mono">{svc.versionLabel}</span></td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${healthBadge(svc.health)}`}>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${healthBadge(svc.healthStatus)}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                    {svc.health}
+                    {svc.healthStatus}
                   </span>
                 </td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.dependencies}</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.dependents}</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.owner}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.dependencyCount}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.dependentCount}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{svc.ownerName || 'Unassigned'}</span></td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <button className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"><Pencil size={13} /></button>
-                    <button className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"><ExternalLink size={13} /></button>
-                    <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"><Trash2 size={13} /></button>
+                    {canEdit && <button onClick={() => onEditService(svc)} className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"><Pencil size={13} /></button>}
+                    {svc.repositoryUrl && <a href={svc.repositoryUrl} target="_blank" rel="noreferrer" className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"><ExternalLink size={13} /></a>}
+                    {canManage && <button onClick={() => onDeleteService(svc)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table>}
       </div>
 
       {showFilter && <FilterPopup onClose={() => setShowFilter(false)} />}
@@ -246,7 +272,7 @@ function ServicesTab({ onAddService, onAddDependency }) {
   );
 }
 
-function DependenciesTab({ onAddDependency }) {
+function DependenciesTab({ dependencies, loading, error, canEdit, onAddDependency, onDeleteDependency }) {
   const [showFilter, setShowFilter] = useState(false);
 
   return (
@@ -259,46 +285,51 @@ function DependenciesTab({ onAddDependency }) {
           <Filter size={14} />
           Filter
         </button>
-        <button
+        {canEdit && <button
           onClick={onAddDependency}
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus size={16} />
           Add Dependency
-        </button>
+        </button>}
       </div>
 
       <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+        {error && <div className="p-4 text-danger text-sm">{error}</div>}
+        {loading && <div className="p-10 text-center text-text-muted">Loading dependencies…</div>}
+        {!loading && !dependencies.length && <div className="p-10 text-center text-text-muted">No dependencies in this project yet.</div>}
+        {!loading && dependencies.length > 0 &&
         <table className="w-full">
           <thead>
             <tr className="border-b border-dark-border">
-              {['Source Service', 'Target Service', 'Type', 'Criticality', 'Latency', 'Created At', 'Actions'].map((h) => (
+              {['Source Service', 'Target Service', 'Type', 'Criticality', 'Protocol', 'Direction', 'Latency', 'Created At', 'Actions'].map((h) => (
                 <th key={h} className="text-left text-xs text-text-muted font-medium px-4 py-3">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {projectDependencies.map((dep, i) => (
-              <tr key={i} className="border-b border-dark-border/50 hover:bg-dark-card-2/50 transition-colors">
-                <td className="px-4 py-3"><span className="text-sm text-text-primary font-medium">{dep.source}</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.target}</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.type}</span></td>
+            {dependencies.map((dep) => (
+              <tr key={dep.id} className="border-b border-dark-border/50 hover:bg-dark-card-2/50 transition-colors">
+                <td className="px-4 py-3"><span className="text-sm text-text-primary font-medium">{dep.sourceServiceName}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.targetServiceName}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.dependencyType.replaceAll('_', ' ')}</span></td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${critBadge(dep.criticality)}`}>{dep.criticality}</span>
                 </td>
-                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.latency}ms</span></td>
-                <td className="px-4 py-3"><span className="text-sm text-text-muted">{dep.createdAt}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.communicationProtocol}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.direction.replaceAll('_', ' ')}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-secondary">{dep.latencyMs == null ? '—' : `${dep.latencyMs}ms`}</span></td>
+                <td className="px-4 py-3"><span className="text-sm text-text-muted">{new Date(dep.createdAt).toLocaleDateString()}</span></td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <button className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"><Link2 size={13} /></button>
-                    <button className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"><Pencil size={13} /></button>
-                    <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"><Trash2 size={13} /></button>
+                    <span title={dep.description || `${dep.sourceServiceName} → ${dep.targetServiceName}`} className="p-1.5 text-text-muted"><Link2 size={13} /></span>
+                    {canEdit && <button onClick={() => onDeleteDependency(dep)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table>}
       </div>
 
       {showFilter && <FilterPopup onClose={() => setShowFilter(false)} />}
@@ -466,11 +497,21 @@ function GraphTab({ onBlastRadius }) {
 
 /* ─── Main component ─── */
 
-export default function ProjectDetails({ project, onBack, onNavigate, onAddService, onAddDependency }) {
+export default function ProjectDetails({ project, onBack, onNavigate, onAddService, onAddDependency, dependencyRevision }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [showEditProject, setShowEditProject] = useState(false);
   const [, setProjectRevision] = useState(0);
   const [team, setTeam] = useState({ members: [], currentUserRole: project?.currentUserRole || 'VIEWER' });
+  const [services, setServices] = useState([]);
+  const [serviceSummary, setServiceSummary] = useState(null);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState('');
+  const [serviceEditor, setServiceEditor] = useState(undefined);
+  const [showServiceEditor, setShowServiceEditor] = useState(false);
+  const [dependencies, setDependencies] = useState([]);
+  const [dependencySummary, setDependencySummary] = useState(null);
+  const [dependenciesLoading, setDependenciesLoading] = useState(true);
+  const [dependenciesError, setDependenciesError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -482,10 +523,68 @@ export default function ProjectDetails({ project, onBack, onNavigate, onAddServi
     return () => { active = false; };
   }, [project?.workspaceId, project?.id, project?.demo]);
 
+  const loadServices = async () => {
+    if (!project?.workspaceId || !project?.id || project?.demo) {
+      setServices(project?.demo ? projectServices : []);
+      setServiceSummary(null);
+      setServicesLoading(false);
+      return;
+    }
+    setServicesLoading(true);
+    setServicesError('');
+    try {
+      const [items, summary] = await Promise.all([
+        listServices(project.workspaceId, project.id),
+        getServiceSummary(project.workspaceId, project.id),
+      ]);
+      setServices(items);
+      setServiceSummary(summary);
+    } catch (requestError) {
+      setServicesError(requestError.message);
+    } finally {
+      setServicesLoading(false);
+    }
+  };
+
+  useEffect(() => { loadServices(); }, [project?.workspaceId, project?.id, project?.demo, dependencyRevision]);
+
+  const loadDependencies = async () => {
+    if (!project?.workspaceId || !project?.id || project?.demo) {
+      setDependencies(project?.demo ? projectDependencies.map((value, index) => ({
+        id: `demo-${index}`, sourceServiceName: value.source, targetServiceName: value.target,
+        dependencyType: value.type.replace(' ', '_').toUpperCase(), criticality: value.criticality.toUpperCase(),
+        communicationProtocol: 'HTTPS', direction: 'UNIDIRECTIONAL', latencyMs: value.latency,
+        createdAt: '2024-05-10T00:00:00Z',
+      })) : []);
+      setDependenciesLoading(false);
+      return;
+    }
+    setDependenciesLoading(true);
+    setDependenciesError('');
+    try {
+      const [items, summary] = await Promise.all([
+        listDependencies(project.workspaceId, project.id),
+        getDependencySummary(project.workspaceId, project.id),
+      ]);
+      setDependencies(items);
+      setDependencySummary(summary);
+    } catch (requestError) {
+      setDependenciesError(requestError.message);
+    } finally {
+      setDependenciesLoading(false);
+    }
+  };
+
+  useEffect(() => { loadDependencies(); }, [project?.workspaceId, project?.id, project?.demo, dependencyRevision]);
+
   const owner = team.members.find((member) => member.role === 'OWNER');
   const memberPreview = team.members.slice(0, 5);
   const extraMembers = Math.max(0, team.members.length - memberPreview.length);
   const canEdit = ['OWNER', 'ADMIN', 'EDITOR'].includes(team.currentUserRole);
+  const canManage = ['OWNER', 'ADMIN'].includes(team.currentUserRole);
+  const projectHealth = services.some((service) => service.healthStatus === 'ERROR') ? 'Error'
+    : services.some((service) => service.healthStatus === 'WARNING') ? 'Warning'
+      : services.length && services.every((service) => service.healthStatus === 'HEALTHY') ? 'Healthy' : 'Unknown';
   const memberInitials = (member) => (member?.displayName || member?.email || '?')
     .split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
@@ -510,11 +609,28 @@ export default function ProjectDetails({ project, onBack, onNavigate, onAddServi
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview': return <OverviewTab />;
-      case 'services': return <ServicesTab onAddService={onAddService} onAddDependency={onAddDependency} />;
-      case 'dependencies': return <DependenciesTab onAddDependency={onAddDependency} />;
+      case 'overview': return <OverviewTab services={services} summary={serviceSummary} dependencySummary={dependencySummary} />;
+      case 'services': return <ServicesTab services={services} loading={servicesLoading} error={servicesError}
+        canEdit={canEdit} canManage={canManage}
+        onAddService={() => { setServiceEditor(undefined); setShowServiceEditor(true); }}
+        onEditService={(service) => { setServiceEditor(service); setShowServiceEditor(true); }}
+        onDeleteService={async (service) => {
+          if (!window.confirm(`Delete "${service.name}"?`)) return;
+          try { await deleteService(project.workspaceId, project.id, service.id); await loadServices(); }
+          catch (requestError) { setServicesError(requestError.message); }
+        }}
+        onAddDependency={onAddDependency} />;
+      case 'dependencies': return <DependenciesTab dependencies={dependencies} loading={dependenciesLoading}
+        error={dependenciesError} canEdit={canEdit} onAddDependency={onAddDependency}
+        onDeleteDependency={async (dependency) => {
+          if (!window.confirm(`Delete dependency "${dependency.sourceServiceName} → ${dependency.targetServiceName}"?`)) return;
+          try {
+            await deleteDependency(project.workspaceId, project.id, dependency.id);
+            await Promise.all([loadDependencies(), loadServices()]);
+          } catch (requestError) { setDependenciesError(requestError.message); }
+        }} />;
       case 'graph': return <GraphTab onBlastRadius={() => onNavigate('blast-radius')} />;
-      default: return <OverviewTab />;
+      default: return <OverviewTab services={services} summary={serviceSummary} dependencySummary={dependencySummary} />;
     }
   };
 
@@ -529,7 +645,7 @@ export default function ProjectDetails({ project, onBack, onNavigate, onAddServi
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-semibold text-text-primary">{project?.name || 'Payment Gateway V2'}</h1>
-              <span className="px-2 py-0.5 bg-success/10 text-success text-xs rounded-full">Healthy</span>
+              <span className={`px-2 py-0.5 text-xs rounded-full ${healthBadge(projectHealth)}`}>{projectHealth}</span>
             </div>
             <p className="text-sm text-text-muted mt-0.5">{project?.description || project?.desc || 'No description'}</p>
           </div>
@@ -594,6 +710,10 @@ export default function ProjectDetails({ project, onBack, onNavigate, onAddServi
       {showEditProject && <EditProjectPopup project={project}
         onUpdated={() => setProjectRevision((value) => value + 1)}
         onClose={() => setShowEditProject(false)} />}
+      {showServiceEditor && <AddServicePopup project={project} service={serviceEditor}
+        members={team.members}
+        onSaved={loadServices}
+        onClose={() => setShowServiceEditor(false)} />}
     </div>
   );
 }

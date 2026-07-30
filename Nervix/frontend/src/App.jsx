@@ -28,6 +28,7 @@ export default function App() {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showAddService, setShowAddService] = useState(false);
   const [showAddDependency, setShowAddDependency] = useState(false);
+  const [dependencyRevision, setDependencyRevision] = useState(0);
   const [selectedProject, setSelectedProject] = useState(null);
   const [userData, setUserData] = useState(null);
 
@@ -149,6 +150,7 @@ export default function App() {
             onNavigate={handleNavigate}
             onAddService={handleAddService}
             onAddDependency={handleAddDependency}
+            dependencyRevision={dependencyRevision}
           />
         );
       case 'graph':
@@ -244,7 +246,9 @@ export default function App() {
 
       {showAddDependency && (
         <AddDependencyPopup
+          project={selectedProject}
           onClose={() => setShowAddDependency(false)}
+          onCreated={() => setDependencyRevision((value) => value + 1)}
         />
       )}
     </div>

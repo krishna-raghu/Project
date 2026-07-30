@@ -8,6 +8,8 @@ import com.nervix.platform.organization.infrastructure.*;
 import com.nervix.platform.project.api.*;
 import com.nervix.platform.project.domain.*;
 import com.nervix.platform.project.infrastructure.*;
+import com.nervix.platform.service.infrastructure.ProjectServiceRepository;
+import com.nervix.platform.dependency.infrastructure.ServiceDependencyRepository;
 import java.util.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,9 +21,12 @@ public class ProjectService {
     private final UserRepository users; private final OrganizationRepository organizations;
     private final OrganizationMemberRepository workspaceMembers; private final ProjectRepository projects;
     private final ProjectMemberRepository projectMembers;
+    private final ProjectServiceRepository services;
+    private final ServiceDependencyRepository dependencies;
     public ProjectService(UserRepository users,OrganizationRepository organizations,OrganizationMemberRepository workspaceMembers,
-        ProjectRepository projects,ProjectMemberRepository projectMembers){
-        this.users=users;this.organizations=organizations;this.workspaceMembers=workspaceMembers;this.projects=projects;this.projectMembers=projectMembers;
+        ProjectRepository projects,ProjectMemberRepository projectMembers,ProjectServiceRepository services,
+        ServiceDependencyRepository dependencies){
+        this.users=users;this.organizations=organizations;this.workspaceMembers=workspaceMembers;this.projects=projects;this.projectMembers=projectMembers;this.services=services;this.dependencies=dependencies;
     }
     @Transactional(readOnly=true) public List<ProjectResponse> list(Jwt jwt,UUID workspaceId){
         User user=currentUser(jwt);requireWorkspaceMember(workspaceId,user.getId());
@@ -102,6 +107,8 @@ public class ProjectService {
         .orElseThrow(()->new AccessDeniedException("Project membership required"));}
     private void requireManager(Project project,UUID userId){if(!requireProjectMember(project,userId).getRole().canManage())throw new AccessDeniedException("Insufficient project role");}
     private ProjectResponse response(Project p,ProjectRole role){return new ProjectResponse(p.getId(),p.getOrganization().getId(),p.getName(),p.getDescription(),
-        p.getProjectType(),p.getVisibility(),p.getStatus(),p.getTags(),role,p.getCreatedAt(),p.getUpdatedAt());}
+        p.getProjectType(),p.getVisibility(),p.getStatus(),p.getTags(),role,
+        services.countByProjectIdAndSoftDeletedFalse(p.getId()),
+        dependencies.countByProjectIdAndSoftDeletedFalse(p.getId()),p.getCreatedAt(),p.getUpdatedAt());}
     private ProjectMemberResponse memberResponse(ProjectMember m){return new ProjectMemberResponse(m.getUser().getId(),m.getUser().getEmail(),m.getUser().getDisplayName(),m.getUser().getAvatarUrl(),m.getRole(),m.getJoinedAt());}
 }

@@ -10,6 +10,8 @@ import com.nervix.platform.organization.infrastructure.*;
 import com.nervix.platform.project.api.UpdateProjectRequest;
 import com.nervix.platform.project.domain.*;
 import com.nervix.platform.project.infrastructure.*;
+import com.nervix.platform.service.infrastructure.ProjectServiceRepository;
+import com.nervix.platform.dependency.infrastructure.ServiceDependencyRepository;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
@@ -23,7 +25,9 @@ class ProjectServiceAuthorizationTest {
     private final OrganizationMemberRepository workspaceMembers=mock(OrganizationMemberRepository.class);
     private final ProjectRepository projects=mock(ProjectRepository.class);
     private final ProjectMemberRepository projectMembers=mock(ProjectMemberRepository.class);
-    private final ProjectService service=new ProjectService(users,organizations,workspaceMembers,projects,projectMembers);
+    private final ProjectServiceRepository services=mock(ProjectServiceRepository.class);
+    private final ServiceDependencyRepository dependencies=mock(ServiceDependencyRepository.class);
+    private final ProjectService service=new ProjectService(users,organizations,workspaceMembers,projects,projectMembers,services,dependencies);
     private final UUID subject=UUID.randomUUID(),userId=UUID.randomUUID(),workspaceId=UUID.randomUUID(),projectId=UUID.randomUUID();
     private User user; private Project project;
 
