@@ -71,6 +71,8 @@ api.interceptors.response.use(
 
 const payload = (response) => response.data.data;
 const projectsPath = (workspaceId) => `/workspaces/${workspaceId}/projects`;
+const servicesPath = (workspaceId, projectId) => `${projectsPath(workspaceId)}/${projectId}/services`;
+const dependenciesPath = (workspaceId, projectId) => `${projectsPath(workspaceId)}/${projectId}/dependencies`;
 
 export const getCurrentUser = async () => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -126,3 +128,23 @@ export const bootstrapCurrentUser = async () => {
   }
   return currentUserBootstrapRequest;
 };
+export const listServices = async (workspaceId, projectId) =>
+  payload(await api.get(servicesPath(workspaceId, projectId)));
+export const getServiceSummary = async (workspaceId, projectId) =>
+  payload(await api.get(`${servicesPath(workspaceId, projectId)}/summary`));
+export const createService = async (workspaceId, projectId, body) =>
+  payload(await api.post(servicesPath(workspaceId, projectId), body));
+export const updateService = async (workspaceId, projectId, serviceId, body) =>
+  payload(await api.put(`${servicesPath(workspaceId, projectId)}/${serviceId}`, body));
+export const deleteService = async (workspaceId, projectId, serviceId) =>
+  api.delete(`${servicesPath(workspaceId, projectId)}/${serviceId}`);
+export const listDependencies = async (workspaceId, projectId) =>
+  payload(await api.get(dependenciesPath(workspaceId, projectId)));
+export const getDependencySummary = async (workspaceId, projectId) =>
+  payload(await api.get(`${dependenciesPath(workspaceId, projectId)}/summary`));
+export const createDependency = async (workspaceId, projectId, body) =>
+  payload(await api.post(dependenciesPath(workspaceId, projectId), body));
+export const updateDependency = async (workspaceId, projectId, dependencyId, body) =>
+  payload(await api.put(`${dependenciesPath(workspaceId, projectId)}/${dependencyId}`, body));
+export const deleteDependency = async (workspaceId, projectId, dependencyId) =>
+  api.delete(`${dependenciesPath(workspaceId, projectId)}/${dependencyId}`);
