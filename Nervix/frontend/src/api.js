@@ -148,3 +148,17 @@ export const updateDependency = async (workspaceId, projectId, dependencyId, bod
   payload(await api.put(`${dependenciesPath(workspaceId, projectId)}/${dependencyId}`, body));
 export const deleteDependency = async (workspaceId, projectId, dependencyId) =>
   api.delete(`${dependenciesPath(workspaceId, projectId)}/${dependencyId}`);
+
+
+//export const getArchitectureGraph = (projectId) =>
+     // api.get(`/projects/${projectId}/architecture/graph`);
+
+export async function getArchitectureGraph(projectId){
+
+    const response = await api.get(
+          `/projects/${projectId}/architecture/graph`
+    );
+
+    return response.data;
+
+}
