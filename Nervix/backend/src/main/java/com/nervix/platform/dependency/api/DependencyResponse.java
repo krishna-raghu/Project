@@ -1,4 +1,3 @@
-
 package com.nervix.platform.dependency.api;
 
 import com.nervix.platform.dependency.domain.*;

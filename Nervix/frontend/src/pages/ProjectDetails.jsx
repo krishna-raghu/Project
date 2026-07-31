@@ -9,9 +9,16 @@ import AddServicePopup from './AddServicePopup';
 import FilterPopup from './FilterPopup';
 import ViewServiceDetailsPopup from './ViewServiceDetailsPopup';
 import ServiceFullDetailsPopup from './ServiceFullDetailsPopup';
+import GraphVisualization from './GraphVisualization';
 import {
-  deleteDependency, deleteService, getDependencySummary, getProjectTeam,
-  getServiceSummary, listDependencies, listServices,
+  deleteDependency,
+  deleteService,
+  getDependencySummary,
+  getProjectTeam,
+  getServiceSummary,
+  listDependencies,
+  listServices,
+  getArchitectureGraph,
 } from '../api';
 
 /* ─── Static data ─── */
@@ -38,33 +45,9 @@ const projectDependencies = [
   { source: 'Order Service', target: 'Payment Service', type: 'REST API', criticality: 'High', latency: 185, createdAt: 'May 10, 2024' },
 ];
 
-const graphNodes = [
-  { id: 'api-gateway', label: 'API Gateway', x: 370, y: 70, color: '#3B82F6', type: 'Gateway', version: 'v1.2.0', owner: 'Krishna Singh', deps: 3, dependents: 0, responseTime: '120ms', desc: 'Main API gateway for routing requests' },
-  { id: 'auth-service', label: 'Auth Service', x: 200, y: 190, color: '#10B981', type: 'API', version: 'v1.0.0', owner: 'John Doe', deps: 4, dependents: 6, responseTime: '80ms', desc: 'Handles authentication and authorization' },
-  { id: 'user-service', label: 'User Service', x: 540, y: 190, color: '#10B981', type: 'API', version: 'v1.0.0', owner: 'John One', deps: 5, dependents: 4, responseTime: '95ms', desc: 'User profile and account management' },
-  { id: 'order-service', label: 'Order Service', x: 160, y: 330, color: '#10B981', type: 'API', version: 'v1.1.0', owner: 'John Doe', deps: 4, dependents: 2, responseTime: '150ms', desc: 'Manages order lifecycle and processing' },
-  { id: 'payment-service', label: 'Payment Service', x: 370, y: 330, color: '#F59E0B', type: 'API', version: 'v2.2.1', owner: 'Krishna Singh', deps: 6, dependents: 3, responseTime: '245ms', desc: 'Handles all payment processing and transactions' },
-  { id: 'inventory-service', label: 'Inventory Service', x: 580, y: 330, color: '#F59E0B', type: 'API', version: 'v1.1.0', owner: 'Smith Johnson', deps: 5, dependents: 2, responseTime: '160ms', desc: 'Tracks inventory levels and updates' },
-  { id: 'notification-service', label: 'Notification Service', x: 370, y: 450, color: '#10B981', type: 'API', version: 'v1.0.0', owner: 'Emily Davis', deps: 2, dependents: 1, responseTime: '200ms', desc: 'Sends notifications via email and SMS' },
-  { id: 'database', label: 'Database', x: 250, y: 540, color: '#10B981', type: 'Database', version: 'v1.0', owner: 'Krishna Singh', deps: 0, dependents: 8, responseTime: '15ms', desc: 'Primary PostgreSQL database' },
-  { id: 'redis-cache', label: 'Redis Cache', x: 490, y: 540, color: '#EF4444', type: 'Cache', version: 'v1.0', owner: 'Smith Johnson', deps: 0, dependents: 3, responseTime: '5ms', desc: 'In-memory caching layer' },
-];
 
-const graphEdges = [
-  { from: 'api-gateway', to: 'auth-service' },
-  { from: 'api-gateway', to: 'user-service' },
-  { from: 'api-gateway', to: 'order-service' },
-  { from: 'api-gateway', to: 'payment-service' },
-  { from: 'api-gateway', to: 'inventory-service' },
-  { from: 'auth-service', to: 'user-service' },
-  { from: 'user-service', to: 'database' },
-  { from: 'order-service', to: 'payment-service' },
-  { from: 'order-service', to: 'inventory-service' },
-  { from: 'payment-service', to: 'notification-service' },
-  { from: 'inventory-service', to: 'notification-service' },
-  { from: 'notification-service', to: 'database' },
-  { from: 'payment-service', to: 'database' },
-];
+
+
 
 const healthSummary = [
   { label: 'Healthy', value: 16, color: 'bg-success', percent: '72%' },
@@ -337,164 +320,368 @@ function DependenciesTab({ dependencies, loading, error, canEdit, onAddDependenc
   );
 }
 
-function GraphTab({ onBlastRadius }) {
-  const defaultNode = graphNodes.find(n => n.id === 'payment-service');
-  const [selectedNode, setSelectedNode] = useState(defaultNode);
+function GraphTab({ project, onBlastRadius }) {
+
+  const [graphNodes, setGraphNodes] = useState([]);
+  const [graphEdges, setGraphEdges] = useState([]);
+
+  const [selectedNode, setSelectedNode] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [showFilter, setShowFilter] = useState(false);
   const [showViewService, setShowViewService] = useState(false);
   const [showFullDetails, setShowFullDetails] = useState(false);
 
-  const incomingDeps = graphEdges.filter(e => e.to === selectedNode?.id).map(e => graphNodes.find(x => x.id === e.from)?.label).filter(Boolean);
-  const outgoingDeps = graphEdges.filter(e => e.from === selectedNode?.id).map(e => graphNodes.find(x => x.id === e.to)?.label).filter(Boolean);
+
+  function getNodeColor(status){
+
+    switch(status){
+
+      case "HEALTHY":
+        return "#10B981";
+
+      case "WARNING":
+        return "#F59E0B";
+
+      case "ERROR":
+        return "#EF4444";
+
+      default:
+        return "#6B7280";
+
+    }
+
+  }
+
+
+  useEffect(()=>{
+
+
+    async function loadGraph(){
+
+     const graph = await getArchitectureGraph(
+         project.workspaceId,
+         project.id
+     );
+
+
+     const nodes = graph.nodes.map(node => ({
+
+         id: node.id,
+
+         label: node.label,
+
+         x: Math.random() * 600,
+         y: Math.random() * 450,
+
+         color: getNodeColor(node.healthStatus),
+
+         type: node.type,
+
+         version: node.version,
+
+         owner: node.owner,
+
+         deps: 0,
+
+         dependents: 0,
+
+         responseTime: "-",
+
+         desc: ""
+
+     }));
+
+
+     const edges = graph.edges.map(edge => ({
+
+         from: edge.source,
+
+         to: edge.target
+
+     }));
+
+
+     setGraphNodes(nodes);
+     setGraphEdges(edges);
+     }
+
+
+    loadGraph();
+
+
+  },[project]);
+
+
+
+  useEffect(()=>{
+
+    if(graphNodes.length){
+
+      setSelectedNode(graphNodes[0]);
+
+    }
+
+  },[graphNodes]);
+
+
+
+
+  if(loading){
+
+    return (
+      <div className="p-20 text-center text-text-muted">
+        Loading architecture graph...
+      </div>
+    );
+
+  }
+
+
+  if(error){
+
+    return (
+      <div className="p-20 text-danger">
+        {error}
+      </div>
+    );
+
+  }
+
+
+
+  const incomingDeps =
+    graphEdges
+    .filter(e=>e.to===selectedNode?.id)
+    .map(e=>graphNodes.find(n=>n.id===e.from)?.label)
+    .filter(Boolean);
+
+
+
+  const outgoingDeps =
+    graphEdges
+    .filter(e=>e.from===selectedNode?.id)
+    .map(e=>graphNodes.find(n=>n.id===e.to)?.label)
+    .filter(Boolean);
+
+
 
   return (
-    <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={14} />
-          <input type="text" placeholder="Search nodes in graph..." className="pl-9 pr-4 py-2 bg-dark-card-2 border border-dark-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary w-48" />
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowFilter(true)} className="px-3 py-2 text-sm text-text-secondary border border-dark-border rounded-lg hover:border-primary hover:text-primary transition-colors flex items-center gap-2">
-            <Filter size={14} />Filter
-          </button>
-          <button className="px-3 py-2 text-sm text-text-secondary border border-dark-border rounded-lg hover:border-primary hover:text-primary transition-colors flex items-center gap-2">
-            <Layers size={14} />Layout
-          </button>
-          <button onClick={onBlastRadius} className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors">
-            Blast Radius Analysis
-          </button>
-        </div>
-      </div>
 
-      {/* Graph + right panel */}
-      <div className="flex gap-4" style={{ height: '500px' }}>
-        <div className="flex-1 bg-dark-card border border-dark-border rounded-xl p-3 flex flex-col">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <div className="flex items-center gap-4">
-              {[['bg-success', 'Healthy'], ['bg-warning', 'Warning'], ['bg-danger', 'Error']].map(([c, l]) => (
-                <div key={l} className="flex items-center gap-1.5">
-                  <div className={`w-2.5 h-2.5 rounded-full ${c}`}></div>
-                  <span className="text-xs text-text-secondary">{l}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              <button className="p-1.5 text-text-muted hover:text-text-primary hover:bg-dark-card-2 rounded transition-colors"><ZoomOut size={14} /></button>
-              <button className="p-1.5 text-text-muted hover:text-text-primary hover:bg-dark-card-2 rounded transition-colors"><ZoomIn size={14} /></button>
-              <button className="p-1.5 text-text-muted hover:text-text-primary hover:bg-dark-card-2 rounded transition-colors"><Maximize2 size={14} /></button>
-            </div>
-          </div>
+<div className="space-y-4">
 
-          <svg
-            className="flex-1 w-full bg-dark-bg/40 rounded-lg border border-dark-border cursor-pointer"
-            viewBox="0 0 740 580"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <defs>
-              <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-                <polygon points="0 0, 8 3, 0 6" fill="#4B5563" />
-              </marker>
-            </defs>
-            {graphEdges.map((edge, i) => {
-              const f = graphNodes.find(n => n.id === edge.from);
-              const t = graphNodes.find(n => n.id === edge.to);
-              if (!f || !t) return null;
-              return <line key={i} x1={f.x} y1={f.y} x2={t.x} y2={t.y} stroke="#4B5563" strokeWidth="1.5" markerEnd="url(#arr)" />;
-            })}
-            {graphNodes.map((node) => (
-              <g key={node.id} onClick={() => setSelectedNode(node)} className="cursor-pointer">
-                <circle cx={node.x} cy={node.y} r="22" fill={node.color} fillOpacity="0.15" stroke={selectedNode?.id === node.id ? node.color : 'transparent'} strokeWidth="2" />
-                <circle cx={node.x} cy={node.y} r="10" fill={node.color} />
-                <text x={node.x} y={node.y + 26} textAnchor="middle" fill="#9CA3AF" fontSize="10" fontWeight="500">{node.label}</text>
-              </g>
-            ))}
-          </svg>
-        </div>
 
-        {/* Right node details panel */}
-        {selectedNode && (
-          <div className="w-60 flex-shrink-0 bg-dark-card border border-dark-border rounded-xl p-4 flex flex-col overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-text-primary">Node Details</span>
-              <span className="px-2 py-0.5 bg-success/10 text-success text-xs rounded-full">Healthy</span>
-            </div>
-            <div className="text-base font-semibold text-text-primary mb-3">{selectedNode.label}</div>
-            <div className="space-y-2 text-sm mb-4">
-              {[
-                { label: 'Type', value: selectedNode.type },
-                { label: 'Version', value: selectedNode.version },
-                { label: 'Owner', value: selectedNode.owner },
-                { label: 'Dependencies', value: selectedNode.deps },
-                { label: 'Dependents', value: selectedNode.dependents },
-                { label: 'Response Time', value: selectedNode.responseTime },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-text-muted text-xs">{label}</span>
-                  <span className="text-text-secondary text-xs font-medium">{value}</span>
-                </div>
-              ))}
-            </div>
-            {selectedNode.desc && (
-              <div className="mb-3">
-                <div className="text-xs text-text-muted mb-1">Description</div>
-                <div className="text-xs text-text-secondary leading-relaxed">{selectedNode.desc}</div>
-              </div>
-            )}
-            {incomingDeps.length > 0 && (
-              <div className="mb-3">
-                <div className="text-xs text-text-muted mb-1.5">Incoming Dependencies</div>
-                <div className="space-y-1">{incomingDeps.map((d, i) => <div key={i} className="text-xs text-text-secondary px-2 py-1 bg-dark-card-2 rounded">{d}</div>)}</div>
-              </div>
-            )}
-            {outgoingDeps.length > 0 && (
-              <div className="mb-4">
-                <div className="text-xs text-text-muted mb-1.5">Outgoing Dependencies</div>
-                <div className="space-y-1">{outgoingDeps.map((d, i) => <div key={i} className="text-xs text-text-secondary px-2 py-1 bg-dark-card-2 rounded">{d}</div>)}</div>
-              </div>
-            )}
-            <button
-              onClick={() => setShowFullDetails(true)}
-              className="mt-auto w-full px-3 py-2 text-xs text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
-            >
-              View Full Details
-            </button>
-          </div>
-        )}
-      </div>
+<div className="flex items-center justify-between">
 
-      {/* Bottom node details bar */}
-      {selectedNode && (
-        <div className="bg-dark-card border border-dark-border rounded-xl p-4">
-          <div className="text-xs font-semibold text-text-muted mb-3">Node Details</div>
-          <div className="flex items-center gap-6 p-3 bg-dark-card-2 rounded-lg border border-dark-border">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedNode.color }}></div>
-              <span className="text-sm font-semibold text-text-primary">{selectedNode.label}</span>
-              <span className="px-2 py-0.5 bg-success/10 text-success text-xs rounded-full font-medium">Healthy</span>
-            </div>
-            <span className="text-sm text-text-secondary">Type: {selectedNode.type}</span>
-            <span className="text-sm text-text-secondary">Dependencies: {selectedNode.deps}</span>
-            <span className="text-sm text-text-secondary">Dependents: {selectedNode.dependents}</span>
-            <span className="text-sm text-text-secondary">Response Time: {selectedNode.responseTime}</span>
-            <button
-              onClick={() => setShowViewService(true)}
-              className="ml-auto px-4 py-1.5 text-sm text-primary border border-primary/40 rounded-lg hover:bg-primary/10 transition-colors flex-shrink-0"
-            >
-              View Service Details
-            </button>
-          </div>
-        </div>
-      )}
+<div></div>
 
-      {showFilter && <FilterPopup onClose={() => setShowFilter(false)} />}
-      {showViewService && <ViewServiceDetailsPopup node={selectedNode} onClose={() => setShowViewService(false)} />}
-      {showFullDetails && <ServiceFullDetailsPopup node={selectedNode} onClose={() => setShowFullDetails(false)} />}
-    </div>
-  );
+
+<div className="flex gap-2">
+
+<button
+onClick={()=>setShowFilter(true)}
+className="px-3 py-2 border border-dark-border rounded-lg"
+>
+<Filter size={14}/>
+Filter
+</button>
+
+
+<button
+onClick={onBlastRadius}
+className="px-4 py-2 bg-primary text-white rounded-lg"
+>
+Blast Radius Analysis
+</button>
+
+
+</div>
+
+</div>
+
+
+
+
+<div className="flex gap-4" style={{height:"500px"}}>
+
+
+<div className="flex-1 bg-dark-card border border-dark-border rounded-xl">
+
+
+<svg
+className="w-full h-full"
+viewBox="0 0 740 580"
+>
+
+
+<defs>
+
+<marker
+id="arrow"
+markerWidth="8"
+markerHeight="8"
+refX="7"
+refY="3"
+orient="auto"
+>
+
+<polygon
+points="0 0,8 3,0 6"
+fill="#4B5563"
+/>
+
+</marker>
+
+</defs>
+
+
+
+{
+graphEdges.map((edge,i)=>{
+
+
+const from =
+graphNodes.find(n=>n.id===edge.from);
+
+
+const to =
+graphNodes.find(n=>n.id===edge.to);
+
+
+
+if(!from || !to)
+return null;
+
+
+
+return (
+
+<line
+key={i}
+x1={from.x}
+y1={from.y}
+x2={to.x}
+y2={to.y}
+stroke="#4B5563"
+markerEnd="url(#arrow)"
+/>
+
+)
+
+
+})
 }
 
+
+
+
+{
+graphNodes.map(node=>(
+
+<g
+key={node.id}
+onClick={()=>setSelectedNode(node)}
+>
+
+
+<circle
+cx={node.x}
+cy={node.y}
+r="20"
+fill={node.color}
+/>
+
+
+<text
+x={node.x}
+y={node.y+35}
+textAnchor="middle"
+fill="#9CA3AF"
+fontSize="10"
+>
+
+{node.label}
+
+</text>
+
+
+</g>
+
+))
+
+}
+
+
+
+</svg>
+
+
+</div>
+
+
+
+
+{
+selectedNode &&
+
+<div className="w-60 bg-dark-card border border-dark-border rounded-xl p-4">
+
+
+<h3 className="font-semibold">
+{selectedNode.label}
+</h3>
+
+
+<div className="text-sm mt-3 space-y-2">
+
+<div>
+Type: {selectedNode.type}
+</div>
+
+
+<div>
+Version: {selectedNode.version}
+</div>
+
+
+<div>
+Owner: {selectedNode.owner}
+</div>
+
+
+<div>
+Dependencies: {selectedNode.deps}
+</div>
+
+
+<div>
+Dependents: {selectedNode.dependents}
+</div>
+
+
+</div>
+
+
+
+</div>
+
+}
+
+
+
+</div>
+
+
+
+</div>
+
+
+  );
+
+
+}
 /* ─── Main component ─── */
 
 export default function ProjectDetails({ project, onBack, onNavigate, onAddService, onAddDependency, dependencyRevision }) {
@@ -629,7 +816,14 @@ export default function ProjectDetails({ project, onBack, onNavigate, onAddServi
             await Promise.all([loadDependencies(), loadServices()]);
           } catch (requestError) { setDependenciesError(requestError.message); }
         }} />;
-      case 'graph': return <GraphTab onBlastRadius={() => onNavigate('blast-radius')} />;
+      case 'graph':
+          return (
+              <GraphVisualization
+                  project={project}
+                  onBack={() => setActiveTab('overview')}
+                  onBlastRadius={() => onNavigate('blast-radius')}
+              />
+          );
       default: return <OverviewTab services={services} summary={serviceSummary} dependencySummary={dependencySummary} />;
     }
   };
